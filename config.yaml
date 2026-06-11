@@ -1,0 +1,15 @@
+# Configuration settings for Financial Fraud Detection Pipeline
+
+data:
+  zip_path: "data/creditcard.zip"
+  batch_size: 256
+
+model:
+  latent_dim: 4     # Bottleneck layer size for Autoencoder compression
+
+training:
+  epochs: 20
+  learning_rate: 0.001
+
+evaluation:
+  optimal_threshold: 0.000477
