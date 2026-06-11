@@ -22,32 +22,34 @@ def prepare_data(zip_path='data/creditcard.zip', batch_size=256):
         with z.open(csv_name) as f:
             df = pd.read_csv(f)
             
-    # 2. Standardize column names to lowercase to avoid capitalization issues (e.g., cvv_Match vs cvv_match)
+    # 2. Standardize column names to lowercase
     df.columns = df.columns.str.lower()
-    print("Available columns in dataset (lowercased):", list(df.columns))
     
-    # 3. Feature Selection based on Exploratory Data Analysis (EDA)
-    # Using lowercase matching to be 100% safe
+    # 3. FEATURE ENGINEERING: Manually create 'cvv_match'
+    # Check if the code entered by the user matches the actual card CVV (1 for match, 0 for mismatch)
+    df['cvv_match'] = (df['cardcvv'] == df['enteredcvv']).astype(int)
+    print("Successfully engineered 'cvv_match' feature from cardcvv and enteredcvv.")
+    
+    # 4. Feature Selection based on Exploratory Data Analysis (EDA)
     features_to_use = [
         'transactionamount', 'availablemoney', 'currentbalance', 'creditlimit',
         'cardpresent', 'cvv_match', 'isfraud'
     ]
     df = df[features_to_use].dropna()
     
-    # Convert boolean indicators (True/False) to numeric binary flags (1/0)
+    # Convert boolean indicators to numeric binary flags (1/0)
     df['cardpresent'] = df['cardpresent'].astype(int)
-    df['cvv_match'] = df['cvv_match'].astype(int)
     
-    # 4. Standardize continuous numerical values (Zero mean and unit variance)
+    # 5. Standardize continuous numerical values (Zero mean and unit variance)
     scaler = StandardScaler()
     num_cols = ['transactionamount', 'availablemoney', 'currentbalance', 'creditlimit']
     df[num_cols] = scaler.fit_transform(df[num_cols])
     
-    # 5. Separate normal transactions from fraudulent ones
+    # 6. Separate normal transactions from fraudulent ones
     normal_tx = df[df['isfraud'] == 0]
     fraud_tx = df[df['isfraud'] == 1]
     
-    # 6. Split normal transactions: 80% Train, 10% Validation, 10% Test
+    # 7. Split normal transactions: 80% Train, 10% Validation, 10% Test
     train_normal, temp_normal = train_test_split(normal_tx, test_size=0.2, random_state=42)
     val_normal, test_normal = train_test_split(temp_normal, test_size=0.5, random_state=42)
     
@@ -55,12 +57,12 @@ def prepare_data(zip_path='data/creditcard.zip', batch_size=256):
     X_train = train_normal.drop(['isfraud'], axis=1).values
     X_val = val_normal.drop(['isfraud'], axis=1).values
     
-    # 7. Create the final evaluation test set containing both normal data and fraud samples
+    # 8. Create the final evaluation test set containing both normal data and fraud samples
     test_set = pd.concat([test_normal, fraud_tx])
     X_test = test_set.drop(['isfraud'], axis=1).values
     y_test = test_set['isfraud'].values
     
-    # 8. Convert NumPy arrays into PyTorch Tensors and wrap them in DataLoaders
+    # 9. Convert NumPy arrays into PyTorch Tensors and wrap them in DataLoaders
     train_dataset = TensorDataset(torch.FloatTensor(X_train))
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     
