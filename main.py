@@ -1,6 +1,8 @@
 import os
+import json
 import torch
 import yaml
+import joblib
 from src.data_loader import prepare_data
 from src.model import AnomalyAutoencoder
 from src.training import train_model
@@ -21,7 +23,7 @@ def main():
     
     # 1. Load and preprocess the dataset using batch size from config
     print("\n--- Step 1: Preparing Data ---")
-    train_loader, val_loader, X_test, y_test, input_dim = prepare_data(
+    train_loader, val_loader, X_test, y_test, input_dim, scaler = prepare_data(
         zip_path=config['data']['zip_path'], 
         batch_size=config['data']['batch_size']
     )
@@ -48,7 +50,11 @@ def main():
     os.makedirs('models', exist_ok=True)
     torch.save(trained_model.state_dict(), 'models/autoencoder_fraud.pth')
     print("Model parameters successfully saved to 'models/autoencoder_fraud.pth'")
-    
+
+    # Save the scaler so inference.py can apply identical preprocessing
+    joblib.dump(scaler, 'models/scaler.pkl')
+    print("Scaler saved to 'models/scaler.pkl'")
+
     # 5. Evaluate the model performance on the mixed test set
     print("\n--- Step 5: Evaluating Model ---")
     evaluation_results = evaluate_model(
@@ -57,6 +63,11 @@ def main():
         y_test=y_test, 
         device=device
     )
+
+    # Save the optimal threshold so inference.py can load it without hardcoding
+    with open('models/threshold.json', 'w') as f:
+        json.dump({'optimal_threshold': evaluation_results['optimal_threshold']}, f)
+    print(f"Optimal threshold saved to 'models/threshold.json'")
     
     print("\nPipeline execution completed successfully using config.yaml parameters!")
 
