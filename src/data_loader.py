@@ -71,4 +71,4 @@ def prepare_data(zip_path='data/creditcard.zip', batch_size=256):
     
     input_dim = X_train.shape[1]
     
-    return train_loader, val_loader, X_test, y_test, input_dim
+    return train_loader, val_loader, X_test, y_test, input_dim, scaler
